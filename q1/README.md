@@ -45,11 +45,11 @@ However we see that the threaded merge sort is steadily growing in its time take
 
 #### N = 1000
 ```
-Normal merge sort took : 0.000497 seconds
-Multiprocess merge sort took : 0.000540 seconds
-Multithreaded merge sort took : 0.037252 seconds
+Normal merge sort took : 0.000628 seconds
+Multiprocess merge sort took : 0.000417 seconds
+Multithreaded merge sort took : 0.037638 seconds
 ```
-Here we see that the multiprocess merge sort outperforms the normal merge sort (marginally). The gain in the speed finally balanced the process creation time.
+Here we see that the multiprocess merge sort outperforms the normal merge sort. The gain in the speed finally balanced the process creation time.
 The threaded merge sort is much slower than both couterparts. We can conclude that thread creation at every level does not speed up our merge sort algorithm.
 
 #### N = 10000
@@ -75,4 +75,4 @@ The threaded merge sort also results in a segmentation fault here, as there is n
 ### Conclusions
 Overall sticking to the normal merge sort is the best option due to its range and decent overall performance.  
 If we want a low variance in the time taken to sort any number(of the range 1o<exp>5</exp>) of integers passed to our program, the process merge sort would be the optimum choice.  
-The threaded merge sort failed to outperform either of its counterparts. However a viable way to use threads would be to create a certain number of threads at inception, and then merge the parts of the arrray sorted by those individual threads. This would ensure that the thread creation overhead would not be reflected in our run time, as we have a constant number of threads created, and the array would be sorted x times as fast where x is the number of threads.
+The threaded merge sort failed to outperform either of its counterparts. However a viable way to use threads would be to create a certain number of threads at inception, and then merge the parts of the arrray sorted by those individual threads. This would ensure that the thread creation overhead would not be reflected in our run time, as we have a constant number of threads created, and the array would be sorted x times as fast where x is the number of threads. We could also create threads only till a certain depth and then switch to normal merge sort to make it faster.
