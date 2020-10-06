@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 199309L
+
 #include<sys/types.h>
 #include<sys/ipc.h>
 #include<sys/shm.h>
@@ -9,12 +11,43 @@
 #include<pthread.h>
 #include<semaphore.h>
 #include<time.h>
+#include <wait.h>
+#include <limits.h>
+#include <fcntl.h>
+#include <time.h>
+#include <pthread.h>
+#include <inttypes.h>
+#include <math.h>
+
 
 #define SUCC 0
 #define FAIL 1
 #define NUM_THREADS 2
 int num_perT;
 int offset;
+
+typedef struct ForT
+{
+	int l, r;
+	int * arr;
+}Array;
+
+
+void SelSort(int *arr, int l, int r)
+{
+	for(int i = l; i<=r; i++)
+	{
+		int min_ind = i;
+		for(int j = i+1; j<=r; j++)
+		{
+			if(arr[j] < arr[min_ind])
+				min_ind = j;
+		}
+		int temp = arr[min_ind];
+		arr[min_ind] = arr[i];
+		arr[i] = temp;
+	}
+}
 
 void Merge(int *arr, int l, int m, int r)
 {
@@ -52,28 +85,18 @@ void Merge(int *arr, int l, int m, int r)
 
 void MergeSort(int *arr, int l, int r)
 {
+	if(r-l+1 < 5)
+	{
+		SelSort(arr, l, r);
+		return;
+	}
+
 	if(l >= r)
 		return;
 	int m = l + (r-l)/2;
 	MergeSort(arr, l, m);
 	MergeSort(arr, m+1, r);
 	Merge(arr, l, m, r);
-}
-
-void SelSort(int *arr, int l, int r)
-{
-	for(int i = l; i<=r; i++)
-	{
-		int min_ind = i;
-		for(int j = i+1; j<=r; j++)
-		{
-			if(arr[j] < arr[min_ind])
-				min_ind = j;
-		}
-		int temp = arr[min_ind];
-		arr[min_ind] = arr[i];
-		arr[i] = temp;
-	}
 }
 
 
@@ -123,6 +146,44 @@ void MergeSortP(int *arr, int l, int r)
 	Merge(arr, l, m, r);
 }
 
+void *MergeSortT(void* a)
+{
+	Array *args = (Array*) a;
+
+	int l = args->l;
+	int r = args->r;
+	int *arr = args->arr;
+
+	if(l > r)
+		return NULL;
+	if(r-l+1 < 5)
+	{
+		SelSort(arr, l, r);
+		return NULL;
+	}
+	
+	int m = l + (r-l)/2;
+	Array al;
+	al.l = l;
+	al.r = m;
+	al.arr = arr;
+	pthread_t tidl;
+	pthread_create(&tidl, NULL, MergeSortT, &al);
+
+	Array ar;
+	ar.l = m+1;
+	ar.r = r;
+	ar.arr = arr;
+	pthread_t tidr;
+	pthread_create(&tidr, NULL, MergeSortT, &ar);
+
+	pthread_join(tidl, NULL);
+	pthread_join(tidr, NULL);
+
+	Merge(arr, l, m, r);
+	return NULL;
+}
+
 
 int main()
 {
@@ -150,10 +211,6 @@ int main()
 		time_taken *= -1;
 
 	printf("Normal merge sort took : %f seconds\n", time_taken);
-	for(int i = 0; i<n; i++)
-		printf("%d ", temparr[i]);
-	printf("\n");
-	
 
 	// For the child process merge sort,
 	// We need to create shared memory
@@ -188,7 +245,26 @@ int main()
 		time_taken *= -1;
 
 	printf("Multiprocess merge sort took : %f seconds\n", time_taken);
+
+	// For multithreaded quicksort we use a seperate thread to call mergesort
+	pthread_t tid;
+	Array a;
+	a.l = 0;
+	a.r = n-1;
+
 	for(int i = 0; i<n; i++)
-		printf("%d ", shared_array[i]);
-	printf("\n");
+		temparr[i] = arr[i];
+
+	a.arr = temparr;
+
+	timer = clock();
+	pthread_create(&tid, NULL, MergeSortT, &a);
+	pthread_join(tid, NULL);
+	timer = timer - clock();
+
+	time_taken = ((double)timer)/CLOCKS_PER_SEC;
+	if(time_taken < 0)
+		time_taken *= -1;
+
+	printf("Multithreaded merge sort took : %f seconds\n", time_taken);
 }
