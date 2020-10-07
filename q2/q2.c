@@ -1,3 +1,4 @@
+/* Header files */
 #include<sys/types.h>
 #include<sys/ipc.h>
 #include<sys/shm.h>
@@ -9,16 +10,12 @@
 #include<pthread.h>
 #include<time.h>
 
+
 /* Definitions used in functions */
-#define EXIT_FAIL 1
-#define EXIT_SUCC 0
-#define FORCE_QUIT -1
 #define MAX_NUM 1024
 #define INVALID -1
 #define WAITING 0
 #define ASSIGNED 1
-#define TRUE 1
-#define FALSE 0
 
 
 /* Colors used for formatting output */
@@ -74,15 +71,13 @@ typedef struct students
 	pthread_mutex_t lock;
 }students;
 
+
 /* Global variables */
 // Number of companies, vaccination zones and students
 int n, m, o;
 
 // Number of students
 int num_stud;
-
-// Array that stores vaccination attempts per student
-int *vacc_attempts;
 
 // Arrays of thread IDs for pharma companies, vaccination zones and students
 pthread_t pharm_id[MAX_NUM]; 
@@ -98,16 +93,22 @@ students student[MAX_NUM];
 /* Function Declarations */
 // Function that returns a random number between ub and lb both inclusive
 int randint(int lb, int ub);
+
 // Function that the threads created for companies call
 void *create_company(void *args);
+
 // Function that the threads created for zones call
 void *create_zone(void *args);
+
 // Function that the threads created for students call
 void *create_student(void *args);
+
 // Function to send all batches of a vaccine to a zone
 void dispatch_vaccines(int id);
+
 // Function to assign students to vaccination zones
 void vaccinate_students(int id);
+
 // Function to create all the threads
 void master_thread();
 
@@ -127,7 +128,6 @@ int main()
 		printf(RED);
 		printf("IIIT students kindly request you to not try and mess with the simulation :)\n");
 		printf("Simulation over.\n");
-		printf(BASE);
 		return 0;
 	}
 
@@ -136,7 +136,6 @@ int main()
 		printf(RED);
 		printf("Limit on companies, zones and students is 1024. \nExiting...\n");
 		printf("Simulation over.\n");
-		printf(BASE);
 		return 0;
 	}
 
@@ -145,7 +144,6 @@ int main()
 		printf(RED);
 		printf("There must be atleast 1 company and 1 zone. All students at IIIT now hate you :(\n");
 		printf("Simulation over.\n");
-		printf(BASE);
 		return 0;
 	}
 
@@ -154,7 +152,6 @@ int main()
 		printf(RED);
 		printf("Did all the students at IIIT disappear?\n");
 		printf("Simulation over.\n");
-		printf(BASE);
 		return 0;
 	}
 
@@ -177,7 +174,6 @@ int main()
 
 	// Creation of individual threads
 	master_thread();
-
 }
 
 
@@ -228,7 +224,6 @@ void master_thread()
 void *create_company(void *args)
 {
 	// Get the pharma company number
-
 	pharmaceutics *comp = (pharmaceutics*)args;
 	int id = comp->id;
 
@@ -236,7 +231,6 @@ void *create_company(void *args)
 	fflush(NULL);
 	printf(GREEN);
    	printf("Pharmaceutical company %d now exists!\n", id);
-	//printf(BASE);
 	fflush(NULL);
 
 	// While there are still students don't return
@@ -246,10 +240,10 @@ void *create_company(void *args)
 		pharma_comp[id].batches = randint(1, 5);
 		pharma_comp[id].unconsumed = pharma_comp[id].batches;
 
+		// Display message 
 		fflush(NULL);
 		printf(MAGENTA);
 		printf("Company %d is preparing %d batches of vaccines each with probability %f of succeeding!\n", id, pharma_comp[id].batches, pharma_comp[id].prob_succ);
-		//printf(BASE);
 		fflush(NULL);
 
 		// Generate random number indicating vaccine production
@@ -260,18 +254,18 @@ void *create_company(void *args)
 		fflush(NULL);
 		printf(YELLOW);
 		printf("Company %d has made %d batches of vaccines each with probability %f of succeeding! Waiting for them to be used to restart production.\n", id, pharma_comp[id].batches, pharma_comp[id].prob_succ);
-		//printf(BASE);
 		fflush(NULL);
 
+		// Send the vaccines to the zones
 		dispatch_vaccines(id);
 	}	
 
-	//printf("Exiting company %d\n", id);
 	return NULL;
 }
 
 void dispatch_vaccines(int id)
 {
+	// While the batches haven't been dispatched and students still exist
 	while(pharma_comp[id].batches && num_stud)
 	{
 		// Iterate over all the valid zones
@@ -287,10 +281,10 @@ void dispatch_vaccines(int id)
 					// If its not locked recheck flag in case another company sent
 					if(vacc_zone[i].has_vaccines == 0)
 					{
+						// Display message
 						fflush(NULL);
 						printf(BLUE);
 						printf("Company %d is sending vaccines to zone %d with success probability %f\n", id, i, pharma_comp[id].prob_succ);
-						//printf(BASE);
 						fflush(NULL);
 
 						// Set the pharma id of the vaccination zone
@@ -302,19 +296,23 @@ void dispatch_vaccines(int id)
 						// Unlock as the vacc_zone can't unlock
 						pthread_mutex_unlock(&vacc_zone[i].lock);
 
+						// Decrement the number of batches left
 						pharma_comp[id].batches -= 1;
+						
 						// Return if there are no more batches
 						if(pharma_comp[id].batches == 0)
 						{
+							// CHeck if all the batches are consumed or if there are no students left
 							while(pharma_comp[id].unconsumed && num_stud);
-							
+								
+							// If all the students have been taken care of return
 							if(num_stud == 0)
 								return;
 
+							// Otherwise make vaccines again
 							fflush(NULL);
 							printf(RED);
 							printf("Vaccines made by company %d have been consumed, resuming production\n", id);
-							//printf(BASE);
 							fflush(NULL);
 							return;
 						}
@@ -334,10 +332,10 @@ void *create_zone(void *args)
 	vaccination *temp = (vaccination*)args;
 	int id = temp->id;
 	
+	// Display message
 	fflush(NULL);
 	printf(GREEN);
 	printf("Vaccination zone %d has been created!\n", id);
-	//printf(BASE);
 	fflush(NULL);
 
 	// Exit when there are no more students
@@ -347,10 +345,11 @@ void *create_zone(void *args)
 		while(vacc_zone[id].has_vaccines == 0 && num_stud)
 			sleep(1);
 
+		// If there are no students left, join the thread
 		if(num_stud == 0)
 			return NULL;
 
-
+		// Otherwise try and acquire the lock
 		while(pthread_mutex_trylock(&vacc_zone[id].lock))
 			sleep(1);
 
@@ -361,39 +360,45 @@ void *create_zone(void *args)
 		fflush(NULL);
 		printf(BLUE);
 		printf("Vaccination zone %d has received %d vaccines from company %d\n", id, vacc_zone[id].num_vacc, vacc_zone[id].pharma_id);
-		//printf(BASE);
 		fflush(NULL);
 
+		// Small delay
 		sleep(1);
+
 		// While we still have vaccines in this zone, proceed to vaccinate
 		while(num_stud && vacc_zone[id].num_vacc)
 		{
+			// Display message
 			fflush(NULL);
 			printf(BLUE);
 			printf("Vaccination zone %d now entering vaccination phase\n", id);
-			//printf(BASE);
 			fflush(NULL);
+
+			// Small delay
 			sleep(1);
 
+			// Start vaccinating students
 			vaccinate_students(id);
 		}
 
+		// If there are no vaccines left, display message and change number of unconsumed batches in company
 		if(vacc_zone[id].num_vacc == 0)
 		{
 			fflush(NULL);
 			printf(RED);
 			printf("Vaccination zone %d has run out of vaccines\n", id);
-			//printf(BASE);
 			fflush(NULL);
+
 			pharma_comp[vacc_zone[id].pharma_id].unconsumed -= 1;	
 		}
 
+		// The zone doesn't have vaccines anymore
 		vacc_zone[id].has_vaccines = 0;
 
+		// Unlock this zone so it can receive vaccines again
 		pthread_mutex_unlock(&vacc_zone[id].lock);
 	}
 
-	//printf("Exiting zone %d\n", id);
 	return NULL;
 }
 
@@ -404,9 +409,9 @@ void *create_student(void *args)
 	students *temp = (students*)args;
 	int id = temp->id;
 
+	// Infinte loop to ensure that the student is always taken care of
 	while(1)
 	{
-
 		// IIIT students don't come on time :(
 		int delay = randint(2, 5);
 		sleep(delay);
@@ -414,73 +419,84 @@ void *create_student(void *args)
 		// Display message
 		fflush(NULL);
 		printf(BLUE);
-		printf("Student %d has arrived for their %d vaccination!\n", id, student[id].failures+1);
-		//printf(BASE);
+		printf("Student %d has arrived for their vaccination attempt %d!\n", id, student[id].failures+1);
 		fflush(NULL);	
 
+		// Small delay
 		sleep(1);
 
+		// Display next message
 		fflush(NULL);
 		printf(BLUE);
 		printf("Student %d is waiting for their slot!\n", id);
-		//printf(BASE);
 		fflush(NULL);	
 
+		// Set the status to waiting so the zone can allow student to visit 
 		student[id].status = WAITING;
 
 		// Wait till the student gets allocated
 		while(student[id].status == WAITING)
-		{
-			//printf("Student %d is waiting\n", id);
 			sleep(1);
-		}
 
+		// Wait till the student acquires its own lock
 		while(pthread_mutex_trylock(&student[id].lock))
 			sleep(1);
 
-
+		// Small delay
 		sleep(1);
+
+		// Display message
 		fflush(NULL);
 		printf(YELLOW);
 		printf("Student %d has been vaccinated and is waiting for antibody test\n", id);
-		//printf(BASE);
 		fflush(NULL);
 		sleep(1);
 
-		int immune;
-
+		// Math to compute probability
 		float check = ((float)randint(0, 10000000))/10000000;
+		
+		// If vaccine succeeded, then join thread
 		if(check <= student[id].succ_prob)
 		{
+			// Decrement student counter
 			num_stud -= 1;
+
+			// Display message
 			fflush(NULL);
 			printf(GREEN);
 			printf("Student %d has been vaccinated successfully at zone %d!\n", id, student[id].vacc_zone_num);
-			//printf(BASE);
 			fflush(NULL);
+
+			// Student should no longer be in waitinf state
 			student[id].status = INVALID;
 			return NULL;
 		}
+
+		// Otherwise the vaccination attempt failed
 		student[id].failures += 1;
 
+		// Display message
 		fflush(NULL);
 		printf(RED);
 		printf("Student %d failed to be vaccinated at zone %d :(\n", id, student[id].vacc_zone_num);
-		//printf(BASE);
 		fflush(NULL);
 
+		// If the student has been vaccinated 3 times, and has failed all three times join thread
 		if(student[id].failures == 3)
 		{
+			// Decrement number of students
 			num_stud -= 1;
 			fflush(NULL);
 			printf(RED);
 			printf("Student %d failed to be vaccinated 3 times, they can't be let into college :(\n", id);
-			//printf(BASE);
 			fflush(NULL);
+
+			// Invalidate the student
 			student[id].status = INVALID;
 			return NULL;
 		}
 
+		// Unlock the thread so that the zones can invite the student
 		pthread_mutex_unlock(&student[id].lock);
 	}
 	return NULL;
@@ -489,6 +505,7 @@ void *create_student(void *args)
 
 void vaccinate_students(int id)
 {
+	// While there are still students to be vaccinated
 	while(num_stud)
 	{
 		// Set the number of students allowed to be vaccinated
@@ -496,40 +513,49 @@ void vaccinate_students(int id)
 		if(allowed_stud > vacc_zone[id].num_vacc)
 			allowed_stud = vacc_zone[id].num_vacc;
 
+		// Display message
 		fflush(NULL);
 		printf(YELLOW);
 		printf("Vaccination zone %d is ready to vaccinate %d students\n", id, allowed_stud);
-		//printf(BASE);
 		fflush(NULL);
 
+		// While there are still students to be vaccinated and the zone still has space for students
 		while(num_stud && allowed_stud)
 		{
+			// Check all the students
 			for(int i = 0; i<o; i++)
 			{
+				// If they are waiting
 				if(student[i].status == WAITING)
 				{
+					// Try to acquire their lock
 					int check_lock = pthread_mutex_trylock(&student[i].lock);
 
+					// If it is possible
 					if(check_lock == 0)
 					{
+						// Check status again in case student was invalidated
 						if(student[i].status == WAITING)
 						{
+							// Display message
 							fflush(NULL);
 							printf(MAGENTA);
 							printf("Student %d has been allocated a slot at zone %d, waiting to be vaccinated\n", i, id);
-							//printf(BASE);
 							fflush(NULL);
 
-
+							// Change the data of the student accordingly
 							student[i].vacc_zone_num = id;
 							student[i].succ_prob = pharma_comp[vacc_zone[id].pharma_id].prob_succ;
 							student[i].status = ASSIGNED;
 
+							// Unlock the student
 							pthread_mutex_unlock(&student[i].lock);
 
+							// Change the number of vaccines and slots
 							vacc_zone[id].num_vacc -= 1;
 							allowed_stud -= 1;
 
+							// If this round is over, or there are no students left return
 							if(allowed_stud == 0 || num_stud == 0)
 							{
 								fflush(NULL);
