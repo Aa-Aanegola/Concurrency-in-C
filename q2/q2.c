@@ -281,6 +281,9 @@ void dispatch_vaccines(int id)
 					// If its not locked recheck flag in case another company sent
 					if(vacc_zone[i].has_vaccines == 0)
 					{
+						if(num_stud == 0)
+							return;
+
 						// Display message
 						fflush(NULL);
 						printf(BLUE);
@@ -448,7 +451,7 @@ void *create_student(void *args)
 		// Display message
 		fflush(NULL);
 		printf(YELLOW);
-		printf("Student %d has been vaccinated and is waiting for antibody test\n", id);
+		printf("Student %d is waiting for antibody test\n", id);
 		fflush(NULL);
 		sleep(1);
 
@@ -540,7 +543,7 @@ void vaccinate_students(int id)
 							// Display message
 							fflush(NULL);
 							printf(MAGENTA);
-							printf("Student %d has been allocated a slot at zone %d, waiting to be vaccinated\n", i, id);
+							printf("Student %d has been allocated a slot at zone %d, and is being vaccinated\n", i, id);
 							fflush(NULL);
 
 							// Change the data of the student accordingly

@@ -71,9 +71,9 @@ Student 12 is waiting for their slot!
 This indicates that the student is waiting for their slot at one of the vaccination zones.  
 
 ```
-Student 3 has been allocated a slot at zone 1, waiting to be vaccinated
+Student 3 has been allocated a slot at zone 1, and is being vaccinated
 ```
-This indicates that the student has been given a slot by the zone, but now has to wait for the vaccine to be adminstered.  
+This indicates that the student has been given a slot by the zone, and the vaccine is being adminstered. After the zone acknowledges the last student being vaccinated, it starts a new batch.
 
 ```
 Zone 1 has finished this round of vaccination!
@@ -81,7 +81,7 @@ Zone 1 has finished this round of vaccination!
 This means that either the zone ran out of vaccines, or the allowed number of students per iteration of vaccine delivery has been met.  
 
 ```
-Student 57 has been vaccinated and is waiting for antibody test
+Student 57 is waiting for antibody test
 ```
 This means that the student has been vaccinated, and is waiting to know if the vaccine was successful or not.
 
@@ -512,3 +512,13 @@ If this run is over, or there are no students left, return.
 #### Note for readers
 Here I have omitted the print statements to ensure readability, and coherence.  
 By 'lock the thread' I mean the thread acquires the lock the the referred thread and ensures that no other thread can manipulate its data until it has released the lock. The company 'locks' the zone thread means that the company has acquired the lock to a particular zone, inhibiting other companies from sending vaccines to that zone. It also prevents the zone from carrying on its train of execution until the company is done manipulating its data and releases the thread.   
+
+## Assumptions 
+The antibody tests are dispatched to students via email after they receive the vaccine to ensure that the maximum number of students can be vaccinated in any interval of time. The vaccination zones will try and find new students to find after vaccinating the last student in the batch, while the student awaits their antibody test.  
+The companies create a random number of batches only when the batches they made previously have been consumed. A similar mechanism could've been implemented for the zone-student relation but it felt unneccessary to make the zones wait until the students received their antibody test results.  
+Wait times for students are only 1 second between waiting for antibody test and getting their result to indicate superior testing capability.  
+
+## Justifications
+Although locks are not necessarily required in most of the code, I chose to use them out of simplicity. I also placed sleep(1) statements in all the busy waiting loops, to minimize the CPU consumption of each thread. This doesn't affect anything because after the lock is released, no other thread can claim the lock due to the flag.  
+The busy waiting is to ensure smooth flow of the program, and could've been avoided with conditional lock and signal. However the busy wait is much more intuitive and readable.  
+I chose to simply stall the vaccination zone and student threads instead of making a separate function to stall them in because it added redundancy. Also the code is easier to follow given that all the student/zone related functions are in the same location.
