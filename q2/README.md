@@ -18,8 +18,6 @@ For example,
 ```
 Would mean that there is one company, one vaccination zone and one student. The vaccines produced by the company succeed 50% of the time.  
 ## Output format
-The output is split into multiple facets.  
-
 ```
 Pharmaceutical company 0 now exists!
 ```
@@ -341,6 +339,7 @@ if(pharma_comp[id].batches == 0)
 If all the batches have been dispatched, wait for them to be consumed or for the number of students to reach 0. If there are no students left, return.  
 
 #### void *create_zone(void *args);
+
 ```
 vaccination *temp = (vaccination*)args;
 int id = temp->id;
@@ -389,6 +388,7 @@ if(vacc_zone[id].num_vacc == 0)
 ```
 If there are no vaccines left in this zone, then indicate that the batch has been consumed to the company. Also set the flag back to false, and unlock the thread so that a company can send vaccines again.  
 #### void *create_student(void *args);
+
 ```
 students *temp = (students*)args;
 int id = temp->id;
@@ -510,7 +510,7 @@ if(allowed_stud == 0 || num_stud == 0)
 If this run is over, or there are no students left, return.  
 
 #### Note for readers
-Here I have omitted the print statements to ensure readability, and coherence.  
+Here I have omitted the print statements to ensure readability and coherence.  
 By 'lock the thread' I mean the thread acquires the lock the the referred thread and ensures that no other thread can manipulate its data until it has released the lock. The company 'locks' the zone thread means that the company has acquired the lock to a particular zone, inhibiting other companies from sending vaccines to that zone. It also prevents the zone from carrying on its train of execution until the company is done manipulating its data and releases the thread.   
 
 ## Assumptions 

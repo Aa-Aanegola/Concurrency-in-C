@@ -160,7 +160,10 @@ int main()
 
 	// Inputting the success rates of the vaccines
 	for(int i = 0; i<n; i++)
+	{
 		scanf("%f", &pharma_comp[i].prob_succ);
+		pharma_comp[i].prob_succ = abs(pharma_comp[i].prob_succ);
+	}
 
 	// Initializing the structure arrays with their necessary values to indicate status
 	for(int i = 0; i<n; i++)
