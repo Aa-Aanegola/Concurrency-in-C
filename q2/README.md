@@ -261,9 +261,9 @@ Extracts the ID of the company into a local variable. The problem with pointers 
 
 ```
 while(num_stud)
-	{
+{
 	...
-	}
+}
 
 ```
 The company is only operational while there are students. The ellipsis indicates the rest of the code.  
@@ -288,35 +288,35 @@ This is the function that attempts to send vaccines to the zones.
 #### void dispatch_vaccines(int id);
 ```
 while(pharma_comp[id].batches && num_stud)
-	{
+{
 	...
-	}
+}
 ```
 The program runs while there are unvaccinated students, and the batches made by the company haven't been exhausted.  
 
 ```
 for(int i = 0; i<m; i++)
-		{
-		...
-		}
+{
+	...
+}
 
 ```
 We iterate over all the zones, checking if they haven't received a batch of vaccines yet.  
 
 ```
 if(vacc_zone[i].has_vaccines == 0)
-			{
-				int check_lock = pthread_mutex_trylock(&vacc_zone[i].lock);
-				if(check_lock == 0)
-				{
-					if(vacc_zone[i].has_vaccines == 0)
-					{
-					...
-					}
-				}
-				else
-		            pthread_mutex_unlock(&vacc_zone[i].lock);
-		    }
+{
+	int check_lock = pthread_mutex_trylock(&vacc_zone[i].lock);
+	if(check_lock == 0)
+	{
+		if(vacc_zone[i].has_vaccines == 0)
+		{
+			...
+		}
+	}
+	else
+    		pthread_mutex_unlock(&vacc_zone[i].lock);
+}
 ```
 Here we check if the zone hasn't been given a vaccine. To assure that only one company tries to send the zone vaccines we try to acquire its lock. We recheck the value of the flag in case it has been manipulated. If it is free, then we go ahead with our function. If not we free the lock.  
 
@@ -332,9 +332,10 @@ If we can access the zone (ie it was free), update its company id, and set the f
 if(pharma_comp[id].batches == 0)
 {
 	while(pharma_comp[id].unconsumed && num_stud);
-								
+
 	if(num_stud == 0)
 		return;
+}
 ```
 If all the batches have been dispatched, wait for them to be consumed or for the number of students to reach 0. If there are no students left, return.  
 
@@ -348,9 +349,9 @@ Extract the id of the zone from the argument passed.
 
 ```
 while(num_stud)
-	{
+{
 	...
-	}
+}
 ```
 Again we make sure that we execute the program only when there are students left to be vaccinated.  
 
@@ -369,24 +370,25 @@ Assign a random number of vaccines that this zone has acquired from the company.
 
 ```
 while(num_stud && vacc_zone[id].num_vacc)
-	{
-		sleep(1);
-		vaccinate_students(id);
-	}
+{
+	sleep(1);
+	vaccinate_students(id);
+}
 ```
 While there are still students left to be vaccinated and vaccines left in this zone, try to vaccinate students. The sleep here is just to ensure that the vaccination restarts after a slight delay for the next round.  
 
 ```
 if(vacc_zone[id].num_vacc == 0)
-	{
-		pharma_comp[vacc_zone[id].pharma_id].unconsumed -= 1;	
-	}
+{
+	pharma_comp[vacc_zone[id].pharma_id].unconsumed -= 1;	
+}
 
-	vacc_zone[id].has_vaccines = 0;
+vacc_zone[id].has_vaccines = 0;
 
-	pthread_mutex_unlock(&vacc_zone[id].lock);
+pthread_mutex_unlock(&vacc_zone[id].lock);
 ```
 If there are no vaccines left in this zone, then indicate that the batch has been consumed to the company. Also set the flag back to false, and unlock the thread so that a company can send vaccines again.  
+
 #### void *create_student(void *args);
 
 ```
@@ -397,9 +399,9 @@ Again we extract the id of the student to reduce instruction length.
 
 ```
 while(1)
-	{
+{
 	...
-	}
+}
 ```
 Here we run the code infinitely to ensure that every student is either successfully vaccinated or has 3 failed vaccination attempts.  
 
@@ -450,9 +452,9 @@ Here we do a simple probability calculation by generating a random number and di
 #### void vaccinate_students(int id);
 ```
 while(num_stud)
-	{
+{
 	...
-	}
+}
 ```
 Here again we only execute when there are students left to be vaccinated.  
 
@@ -465,25 +467,25 @@ Randomly generate the number of students that are allowed to enter the vaccinati
 
 ```
 while(num_stud && allowed_stud)
+{
+	for(int i = 0; i<o; i++)
 	{
-		for(int i = 0; i<o; i++)
+		if(student[i].status == WAITING)
 		{
-			if(student[i].status == WAITING)
-			{
-			    int check_lock = pthread_mutex_trylock(&student[i].lock);
+		    int check_lock = pthread_mutex_trylock(&student[i].lock);
 
-				if(check_lock == 0)
+			if(check_lock == 0)
+			{
+		    		if(student[i].status == WAITING)
 				{
-				    if(student[i].status == WAITING)
-			        {
-				        ...
-			        }
+					...
 				}
+			}
 		        else
 		            pthread_mutex_unlock(&student[i].lock);
-		      }
-		 }
-    }
+	      	}
+	 }
+}
 ```
 While there are still students pending, and our zone has space for them, iterate through the student pool and try to select one. If the student is waiting, try and acquire their lock. If we can, recheck the status to ensure that it hasn't changed and then carry on. If the status has changed the unlock the thread and try and acquire another student.  
 
