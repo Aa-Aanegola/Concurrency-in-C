@@ -187,13 +187,15 @@ void *MergeSortT(void* a)
 
 int main()
 {
+	struct timespec ts;
+
 	int n;
 	scanf("%d", &n);
 	int *arr = (int*)malloc(n*sizeof(int));
 	int *temparr = (int*)malloc(n*sizeof(int));
 
 	clock_t timer;
-	double time_taken;
+	long double time_taken;
 
 	for(int i = 0; i<n; i++)
 		scanf("%d", &arr[i]);
@@ -202,15 +204,19 @@ int main()
 	for(int i = 0; i<n; i++)
 		temparr[i] = arr[i];
 
-	timer = clock();
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    long double start_ts = ts.tv_nsec/(1e9) + ts.tv_sec;
+	
 	MergeSort(temparr, 0, n-1);
-	timer = timer - clock();
 
-	time_taken = (double)timer/CLOCKS_PER_SEC;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    long double end_ts = ts.tv_nsec/(1e9) + ts.tv_sec;
+    time_taken = end_ts - start_ts;
+
 	if(time_taken < 0)
 		time_taken *= -1;
 
-	printf("Normal merge sort took : %f seconds\n", time_taken);
+	printf("Normal merge sort took : %Lf seconds\n", time_taken);
 
 	// For the child process merge sort,
 	// We need to create shared memory
@@ -236,15 +242,19 @@ int main()
 	for(int i = 0; i<n; i++)
 		shared_array[i] = arr[i];
 
-	timer = clock();
-	MergeSortP(shared_array, 0, n-1);
-	timer = timer - clock();
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    start_ts = ts.tv_nsec/(1e9) + ts.tv_sec;
 
-	time_taken = ((double)timer)/CLOCKS_PER_SEC;
+	MergeSortP(shared_array, 0, n-1);
+	
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    end_ts = ts.tv_nsec/(1e9) + ts.tv_sec;
+    time_taken = end_ts - start_ts;
+
 	if(time_taken < 0)
 		time_taken *= -1;
 
-	printf("Multiprocess merge sort took : %f seconds\n", time_taken);
+	printf("Multiprocess merge sort took : %Lf seconds\n", time_taken);
 
 	// For multithreaded quicksort we use a seperate thread to call mergesort
 	pthread_t tid;
@@ -257,14 +267,18 @@ int main()
 
 	a.arr = temparr;
 
-	timer = clock();
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    start_ts = ts.tv_nsec/(1e9) + ts.tv_sec;
+
 	pthread_create(&tid, NULL, MergeSortT, &a);
 	pthread_join(tid, NULL);
-	timer = timer - clock();
 
-	time_taken = ((double)timer)/CLOCKS_PER_SEC;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    end_ts = ts.tv_nsec/(1e9) + ts.tv_sec;
+    time_taken = end_ts - start_ts;
+
 	if(time_taken < 0)
 		time_taken *= -1;
 
-	printf("Multithreaded merge sort took : %f seconds\n", time_taken);
+	printf("Multithreaded merge sort took : %Lf seconds\n", time_taken);
 }
