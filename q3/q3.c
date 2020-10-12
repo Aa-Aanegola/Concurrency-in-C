@@ -81,13 +81,30 @@ int main()
 
 	// Inputing the necessary values
 	scanf("%d %d %d %d %d %d %d", &k, &a, &e, &c, &t1, &t2, &t);
-	
+
+	k = abs(k);
+	a = abs(a);
+	e = abs(e);
+	c = abs(c);
+	t1 = abs(t1);
+	t2 = abs(t2);
+	t = abs(t);
+
 	// Inputing the details of each performer
 	for(int i = 0; i<k; i++)
 	{
 		performer[i].status = INVALID;
 		scanf("%s %c %d", performer[i].name, &performer[i].type, &performer[i].delay);
 		performer[i].delay = abs(performer[i].delay);
+	}
+
+	if(c == 0)
+	{	
+		fflush(NULL);
+		printf(RED);
+		printf("Abhinav found out that none of the coordinators were interested and decided to come!\n");
+		fflush(NULL);
+		c++;
 	}
 
 	master_thread();
