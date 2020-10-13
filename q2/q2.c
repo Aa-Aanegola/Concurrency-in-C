@@ -9,6 +9,7 @@
 #include<stdio.h>
 #include<pthread.h>
 #include<time.h>
+#include<math.h>
 
 
 /* Definitions used in functions */
@@ -53,6 +54,10 @@ typedef struct vaccinnation
 	int pharma_id;
 	// Mutex to ensure that each zone receives only one batch of vaccinations
 	pthread_mutex_t lock;
+	// Stores the number of students left in a particular round
+	int stud_left;
+	// Flag to be set when the zone is vaccinating
+	int vaccinating;
 }vaccination;
 
 typedef struct students
@@ -162,7 +167,7 @@ int main()
 	for(int i = 0; i<n; i++)
 	{
 		scanf("%f", &pharma_comp[i].prob_succ);
-		pharma_comp[i].prob_succ = abs(pharma_comp[i].prob_succ);
+		pharma_comp[i].prob_succ = fabs(pharma_comp[i].prob_succ);
 	}
 
 	// Initializing the structure arrays with their necessary values to indicate status
@@ -170,7 +175,10 @@ int main()
 		pharma_comp[i].batches = 0;
 
 	for(int i = 0; i<m; i++)
+	{
 		vacc_zone[i].has_vaccines = 0;
+		vacc_zone[i].vaccinating = 0;
+	}
 
 	for(int i = 0; i<o; i++)
 		student[i].status = INVALID;
@@ -376,8 +384,8 @@ void *create_zone(void *args)
 		{
 			// Display message
 			fflush(NULL);
-			printf(BLUE);
-			printf("Vaccination zone %d now entering vaccination phase\n", id);
+			printf(CYAN);
+			printf("Vaccination zone %d now entering allocation phase\n", id);
 			fflush(NULL);
 
 			// Small delay
@@ -433,7 +441,7 @@ void *create_student(void *args)
 
 		// Display next message
 		fflush(NULL);
-		printf(BLUE);
+		printf(MAGENTA);
 		printf("Student %d is waiting for their slot!\n", id);
 		fflush(NULL);	
 
@@ -442,6 +450,10 @@ void *create_student(void *args)
 
 		// Wait till the student gets allocated
 		while(student[id].status == WAITING)
+			sleep(1);
+
+		// Wait for the zone to start vaccinating after being assigned
+		while(vacc_zone[student[id].vacc_zone_num].vaccinating == 0)
 			sleep(1);
 
 		// Wait till the student acquires its own lock
@@ -454,10 +466,13 @@ void *create_student(void *args)
 		// Display message
 		fflush(NULL);
 		printf(YELLOW);
-		printf("Student %d is waiting for antibody test\n", id);
+		printf("Student %d has been vaccinated and is waiting for antibody test\n", id);
 		fflush(NULL);
 		sleep(1);
 
+		// Decrement the number of students left to be vaccinated at the zone
+		vacc_zone[student[id].vacc_zone_num].stud_left -= 1;
+		
 		// Math to compute probability
 		float check = ((float)randint(0, 10000000))/10000000;
 		
@@ -514,10 +529,17 @@ void vaccinate_students(int id)
 	// While there are still students to be vaccinated
 	while(num_stud)
 	{
+		// If the zone has no vaccines left, return 
+		if(vacc_zone[id].num_vacc == 0)
+			return;
+
 		// Set the number of students allowed to be vaccinated
 		int allowed_stud = randint(1, 8);
 		if(allowed_stud > vacc_zone[id].num_vacc)
 			allowed_stud = vacc_zone[id].num_vacc;
+
+		// Start with 0 students
+		vacc_zone[id].stud_left = 0;
 
 		// Display message
 		fflush(NULL);
@@ -525,12 +547,15 @@ void vaccinate_students(int id)
 		printf("Vaccination zone %d is ready to vaccinate %d students\n", id, allowed_stud);
 		fflush(NULL);
 
-		// While there are still students to be vaccinated and the zone still has space for students
-		while(num_stud && allowed_stud)
+		while(num_stud && vacc_zone[id].stud_left == 0)
 		{
 			// Check all the students
 			for(int i = 0; i<o; i++)
 			{
+				// If all slots are filled or there are no students left, do nothing
+				if(allowed_stud == 0 || num_stud == 0)
+					break;
+
 				// If they are waiting
 				if(student[i].status == WAITING)
 				{
@@ -546,7 +571,7 @@ void vaccinate_students(int id)
 							// Display message
 							fflush(NULL);
 							printf(MAGENTA);
-							printf("Student %d has been allocated a slot at zone %d, and is being vaccinated\n", i, id);
+							printf("Student %d has been allocated a slot at zone %d, and will be vaccinated\n", i, id);
 							fflush(NULL);
 
 							// Change the data of the student accordingly
@@ -557,20 +582,11 @@ void vaccinate_students(int id)
 							// Unlock the student
 							pthread_mutex_unlock(&student[i].lock);
 
-							// Change the number of vaccines and slots
+							// Change the number of vaccines and slots and waiting students
 							vacc_zone[id].num_vacc -= 1;
 							allowed_stud -= 1;
+							vacc_zone[id].stud_left += 1;
 
-							// If this round is over, or there are no students left return
-							if(allowed_stud == 0 || num_stud == 0)
-							{
-								fflush(NULL);
-								printf(RED);
-								printf("Zone %d has finished this round of vaccination!\n", id);
-								//printf(BASE);
-								fflush(NULL);
-								return;
-							}
 						}
 						else
 							pthread_mutex_unlock(&student[i].lock);
@@ -578,5 +594,31 @@ void vaccinate_students(int id)
 				}
 			}
 		}
+
+		// If there are no students left, then return
+		if(num_stud == 0)
+			return;
+
+		// Display message
+		fflush(NULL);
+		printf(CYAN);
+		printf("Zone %d is starting its vaccination phase!\n", id);
+		fflush(NULL);	
+
+		// Change the state to vaccinating
+		vacc_zone[id].vaccinating = 1;
+
+		// Wait for all students to receive vaccine
+		while(vacc_zone[id].stud_left && num_stud)
+			sleep(1);
+
+		// Reset the vaccinating state to false
+		vacc_zone[id].vaccinating = 0;
+
+		// Display message
+		fflush(NULL);
+		printf(CYAN);
+		printf("Zone %d has finished its vaccination phase!\n", id);
+		fflush(NULL);
 	}
 }

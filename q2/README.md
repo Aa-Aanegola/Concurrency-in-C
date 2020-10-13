@@ -54,14 +54,14 @@ Student 3 has arrived for vaccination attempt 1!
 This indicates that the student is waiting to be allocated to a zone, and it also shows the vaccination attempt number.  
 
 ```
-Vaccination zone 1 now entering vaccination phase
-```
-This indicates that the zone is now ready to allow students inside, and will start adminstering vaccines.  
-
-```
 Vaccination zone 6 is ready to vaccinate 1 students
 ```
 This indicates that the zone is ready to allow a certain number of students in for vaccination.  
+
+```
+Vaccination zone 1 now entering allocation phase
+```
+This indicates that the zone is now ready to allocate students for vaccination and will start vaccinating when enough students have been allocated.  
 
 ```
 Student 12 is waiting for their slot!
@@ -69,7 +69,7 @@ Student 12 is waiting for their slot!
 This indicates that the student is waiting for their slot at one of the vaccination zones.  
 
 ```
-Student 3 has been allocated a slot at zone 1, and is being vaccinated
+Student 3 has been allocated a slot at zone 1, and will be vaccinated
 ```
 This indicates that the student has been given a slot by the zone, and the vaccine is being adminstered. After the zone acknowledges the last student being vaccinated, it starts a new batch.
 
@@ -165,9 +165,11 @@ typedef struct vaccinnation
 	int has_vaccines;
 	int pharma_id;
 	pthread_mutex_t lock;
+	int stud_left;
+	int vaccinating;
 }vaccination;
 ```
-This structure is for vaccination zones. It stores the id of the zone, the number of vaccines it currently has, a flag to indicate whether it has received vaccines or not, the id of the company it got its vaccines from and a mutex lock used to ensure that no more than one company sends vaccines to each zone.  
+This structure is for vaccination zones. It stores the id of the zone, the number of vaccines it currently has, a flag to indicate whether it has received vaccines or not, the id of the company it got its vaccines from and a mutex lock used to ensure that no more than one company sends vaccines to each zone. It also stores a variable to track how many students are yet to receive the vaccine, a flag to indicate whether the zone is in its vaccinating phase or not.
 
 ```
 typedef struct students
@@ -253,6 +255,7 @@ return lb+rand()%(ub-lb+1);
 Simply returns a random number between ub and lb both inclusive.
 
 #### void *create_comapny(void *args);
+
 ```
 	pharmaceutics *comp = (pharmaceutics*)args;
 	int id = comp->id;
@@ -360,8 +363,10 @@ while(vacc_zone[id].has_vaccines == 0 && num_stud)
 	sleep(1);
 if(num_stud == 0)
 	return NULL;
+while(pthread_mutex_trylock(&vacc_zone[id].lock))
+			sleep(1);
 ```
-Wait for the zone to acquire vaccines, or for the number of students left to vaccinate become 0. If there are no students left, join the thread. 
+Wait for the zone to acquire vaccines, or for the number of students left to vaccinate become 0. If there are no students left, join the thread. If there are students left, wait till the lock to the zone is acquired ensuring that no company can send vaccines.  
 
 ```
 vacc_zone[id].num_vacc = randint(10, 20);
@@ -418,14 +423,22 @@ student[id].status = WAITING;
 while(student[id].status == WAITING)
 	sleep(1); 
 
+while(vacc_zone[student[id].vacc_zone_num].vaccinating == 0)
+			sleep(1);
+
 while(pthread_mutex_trylock(&student[id].lock))
 	sleep(1);
 ```
-Change the status of the student, so that the zone can invite the student. Wait for the zone to invite the student, and then try and acquire the lock to the student so that the zones don't try and invite the student.   
+Change the status of the student, so that the zone can invite the student. Once the student has been allocated to a zone, wait for the zone to start vaccinating which is reflected in the change in the flag variable. When the zone starts vaccinating, try and acquire the lock to the student to ensure that no zone can try and allocate the student.  
+
+```
+vacc_zone[student[id].vacc_zone_num].stud_left -= 1;
+```
+Here we decrement the number of students left to be vaccinated after the student has been vaccinated at the zone. This helps ensure that once all students allocated to a zone have been vaccinated, we can start a new round of vaccination at the zone. 
 
 ```
 float check = ((float)randint(0, 10000000))/10000000;
-		
+
 if(check <= student[id].succ_prob)
 {
 	num_stud -= 1;
@@ -459,17 +472,27 @@ while(num_stud)
 Here again we only execute when there are students left to be vaccinated.  
 
 ```
+if(vacc_zone[id].num_vacc == 0)
+	return;
+```
+If the zone has run out of vaccines, then we return and allow the companies to send vaccines to us.  
+
+```
 int allowed_stud = randint(1, 8);
 if(allowed_stud > vacc_zone[id].num_vacc)
 	allowed_stud = vacc_zone[id].num_vacc;
+vacc_zone[id].stud_left = 0;
 ```
-Randomly generate the number of students that are allowed to enter the vaccination zone at any point in time. If this number is greater than the number of vaccines left in the zone, truncate it.  
+Randomly generate the number of students that are allowed to enter the vaccination zone at any point in time. If this number is greater than the number of vaccines left in the zone, truncate it. We also set the number of students left to be vaccinated to be 0, as no students have been allocated yet
 
 ```
-while(num_stud && allowed_stud)
+while(num_stud && vacc_zone[id].stud_left == 0)
 {
 	for(int i = 0; i<o; i++)
 	{
+		if(allowed_stud == 0 || num_stud == 0)
+					break;
+
 		if(student[i].status == WAITING)
 		{
 		    int check_lock = pthread_mutex_trylock(&student[i].lock);
@@ -487,7 +510,7 @@ while(num_stud && allowed_stud)
 	 }
 }
 ```
-While there are still students pending, and our zone has space for them, iterate through the student pool and try to select one. If the student is waiting, try and acquire their lock. If we can, recheck the status to ensure that it hasn't changed and then carry on. If the status has changed the unlock the thread and try and acquire another student.  
+While there are still students pending, and our zone has space for them, iterate through the student pool and try to select one. If the student is waiting, try and acquire their lock. If we can, recheck the status to ensure that it hasn't changed and then carry on. If the status has changed the unlock the thread and try and acquire another student. If there are no more students, or our zone has met its capacity, break from the while loop. Here we greedily try to select students. The zone will make passes over the students until it gets one student. It does not wait to check if any students have failed their previous vaccination as it assumes that they have already been allocated (at that instant in time) to another zone. This also prevents deadlocks from happening, as zones only wait till they get one student or there are no students left to vaccinate.  
 
 ```
 student[i].vacc_zone_num = id;
@@ -500,16 +523,27 @@ Assign the student the vaccination zone id of the zone it has been assigned to. 
 ```
 vacc_zone[id].num_vacc -= 1;
 allowed_stud -= 1;
+vacc_zone[id].stud_left += 1;
 ```
-Decrease the number of vaccines left in the zone, and also change the number of students that will now be allowed into the zone for this run.  
+Decrease the number of vaccines left in the zone, and also change the number of students that will now be allowed into the zone for this run. Increments the number of students left to be vaccinated in the zone by one.  
 
 ```
-if(allowed_stud == 0 || num_stud == 0)
-{
-	return;
-}
+<outside while>
+if(num_stud == 0)
+			return;
 ```
-If this run is over, or there are no students left, return.  
+If there are no more students left, return.  
+
+```
+vacc_zone[id].vaccinating = 1;
+
+while(vacc_zone[id].stud_left && num_stud)
+	sleep(1);
+
+vacc_zone[id].vaccinating = 0;
+``` 
+If there are students left to vaccinate, then start vaccinating the students currently allocated to this zone. Wait till all the students have been vaccinated, and then reset the zone for the next run.
+
 
 #### Note for readers
 Here I have omitted the print statements to ensure readability and coherence.  
@@ -519,8 +553,10 @@ By 'lock the thread' I mean the thread acquires the lock the the referred thread
 The antibody tests are dispatched to students via email after they receive the vaccine to ensure that the maximum number of students can be vaccinated in any interval of time. The vaccination zones will try and find new students to find after vaccinating the last student in the batch, while the student awaits their antibody test.  
 The companies create a random number of batches only when the batches they made previously have been consumed. A similar mechanism could've been implemented for the zone-student relation but it felt unneccessary to make the zones wait until the students received their antibody test results.  
 Wait times for students are only 1 second between waiting for antibody test and getting their result to indicate superior testing capability.  
+The students are capable of teleporting to the testing zone once the zone opens up for vaccination.  
 
 ## Justifications
 Although locks are not necessarily required in most of the code, I chose to use them out of simplicity. I also placed sleep(1) statements in all the busy waiting loops, to minimize the CPU consumption of each thread. This doesn't affect anything because after the lock is released, no other thread can claim the lock due to the flag.  
 The busy waiting is to ensure smooth flow of the program, and could've been avoided with conditional lock and signal. However the busy wait is much more intuitive and readable.  
-I chose to simply stall the vaccination zone and student threads instead of making a separate function to stall them in because it added redundancy. Also the code is easier to follow given that all the student/zone related functions are in the same location.
+The lock for the vaccination zone stud_left is not required because we are only decrementing/incrementing in any given phase of the program. However to highlight that it is a critical section in the program, locks were used to signify their criticality.  
+Zones try and allocate students until they get atleast one student. This was done in an attempt to make the vaccination efficient as otherwise the zones would keep waiting until some student failed their previous test. Although this does lead to more vaccination rounds, overall the vaccination should be faster.  
