@@ -240,8 +240,9 @@ struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
 	
 ts.tv_sec += t;
-	
-int check = sem_timedwait(&acoustic, &ts);
+
+int check;
+while((check = sem_timedwait(&acoustic, &ts)) == -1 && errno == EINTR);
 ```
 Here we define a timespec struct that the ```sem_timedawait()``` function uses. We increase its seconds counter by t indicating the patience threshold, and then wait on the acoustic stage semaphore. If we acquire it then wait will return 0, otherwise it will return -1.  
 
@@ -312,7 +313,8 @@ clock_gettime(CLOCK_REALTIME, &ts);
 	
 ts.tv_sec += t;
 	
-int check = sem_timedwait(&singer_join, &ts);
+int check;
+while((check = sem_timedwait(&singer_join, &ts)) == -1 && errno == EINTR);
 ```
 Here we follow the same method as the ```wait_for_acoustic()``` function in that we wait for t seconds. However we wait on the singer_join semaphore that indicates that there are performers who don't have singers on stage.  
 

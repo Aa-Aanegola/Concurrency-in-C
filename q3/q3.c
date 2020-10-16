@@ -91,21 +91,6 @@ int main()
 	// Inputing the necessary values
 	scanf("%d %d %d %d %d %d %d", &k, &a, &e, &c, &t1, &t2, &t);
 
-	k = abs(k);
-	a = abs(a);
-	e = abs(e);
-	c = abs(c);
-	t1 = abs(t1);
-	t2 = abs(t2);
-	t = abs(t);
-
-	if(t1 > t2)
-	{
-		int temp = t1;
-		t1 = t2;
-		t2 = temp;
-	}
-
 	// Inputing the details of each performer
 	for(int i = 0; i<k; i++)
 	{
@@ -209,7 +194,7 @@ void *create_performer(void *args)
 	return NULL;
 		
 	// Wait for the coordinator to be assigned to you 
-	sem_wait(&coordinators);	
+	sem_wait(&coordinators);
 
 	// Display messages and small delay
 	fflush(NULL);
@@ -242,7 +227,8 @@ void *wait_for_acoustic(void *args)
 	ts.tv_sec += t;
 		
 	// Wait only for t seconds
-	int check = sem_timedwait(&acoustic, &ts);
+	int check;
+	while((check = sem_timedwait(&acoustic, &ts)) == -1 && errno == EINTR);
 
 	// If we acquired the semaphore
 	if(check != -1)
@@ -254,7 +240,7 @@ void *wait_for_acoustic(void *args)
 		if(perf->status == PERFORMING)
 		{
 			sem_post(&acoustic);
-			pthread_mutex_unlock(&perf->lock);		
+			pthread_mutex_unlock(&perf->lock);	
 			return NULL;
 		}
 
@@ -315,7 +301,8 @@ void *wait_for_electric(void *args)
 	
 	ts.tv_sec += t;
 	
-	int check = sem_timedwait(&electric, &ts);
+	int check;
+	while((check = sem_timedwait(&electric, &ts)) == -1 && errno == EINTR);
 
 	if(check != -1)
 	{
@@ -378,7 +365,8 @@ void *wait_for_perf(void *args)
 	
 	ts.tv_sec += t;
 	
-	int check = sem_timedwait(&singer_join, &ts);
+	int check;
+	while((check = sem_timedwait(&singer_join, &ts)) == -1 && errno == EINTR);
 
 	// If we acquired the semaphore
 	if(check != -1)
