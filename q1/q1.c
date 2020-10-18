@@ -216,6 +216,10 @@ int main()
 	if(time_taken < 0)
 		time_taken *= -1;
 
+	for(int i = 0; i<n; i++)
+		printf("%d ", temparr[i]);
+	printf("\n");
+
 	printf("Normal merge sort took : %Lf seconds\n", time_taken);
 
 	// For the child process merge sort,
@@ -254,6 +258,10 @@ int main()
 	if(time_taken < 0)
 		time_taken *= -1;
 
+	for(int i = 0; i<n; i++)
+		printf("%d ", shared_array[i]);
+	printf("\n");
+
 	printf("Multiprocess merge sort took : %Lf seconds\n", time_taken);
 
 	// For multithreaded quicksort we use a seperate thread to call mergesort
@@ -279,6 +287,10 @@ int main()
 
 	if(time_taken < 0)
 		time_taken *= -1;
+
+	for(int i = 0; i<n; i++)
+		printf("%d ", temparr[i]);
+	printf("\n");
 
 	printf("Multithreaded merge sort took : %Lf seconds\n", time_taken);
 }

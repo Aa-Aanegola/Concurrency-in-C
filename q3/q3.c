@@ -123,10 +123,7 @@ void master_thread()
 	sem_init(&acoustic, 0, a);
 	sem_init(&electric, 0, e);
 	sem_init(&coordinators, 0, c);
-	sem_init(&singer_join, 0, k);
-
-	for(int i = 0; i<k; i++)
-		sem_wait(&singer_join);
+	sem_init(&singer_join, 0, 0);
 
 	// Spawn all the performers
 	for(int i = 0; i<k; i++)
@@ -256,7 +253,7 @@ void *wait_for_acoustic(void *args)
 		perf->status = PERFORMING;
 		if(perf->type != 's')
 			sem_post(&singer_join);
-		pthread_mutex_unlock(&perf->lock);		
+		pthread_mutex_unlock(&perf->lock);
 		
 		int perf_time = randint(t1, t2);	
 
@@ -376,7 +373,7 @@ void *wait_for_perf(void *args)
 		if(perf->status == PERFORMING)
 		{
 			sem_post(&singer_join);
-			pthread_mutex_unlock(&perf->lock);		
+			pthread_mutex_unlock(&perf->lock);
 			return NULL;
 		}
 			
