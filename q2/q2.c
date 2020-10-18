@@ -317,7 +317,8 @@ void dispatch_vaccines(int id)
 						if(pharma_comp[id].batches == 0)
 						{
 							// CHeck if all the batches are consumed or if there are no students left
-							while(pharma_comp[id].unconsumed && num_stud);
+							while(pharma_comp[id].unconsumed && num_stud)
+								sleep(1);
 								
 							// If all the students have been taken care of return
 							if(num_stud == 0)

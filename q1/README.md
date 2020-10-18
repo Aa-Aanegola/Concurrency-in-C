@@ -50,7 +50,7 @@ Normal merge sort took : 0.000497 seconds
 Multiprocess merge sort took : 0.025717 seconds
 Multithreaded merge sort took : 0.010974 seconds
 ```
-Again we see that a similar result to the previous test. It is highly plausible that the creation of a process or thread takes more time than it does to actually carry out the functionality of the merge sort. It is also possible that requests for memory in the merge function may take time due to the multiple processes requesting the memory at the same level, while in a normal merge sort only one merge is carried out at any point in time.  
+Again we see that a similar result to the previous test. It is definitive that the creation of a process or thread takes more time than it does to actually carry out the functionality of the merge sort. It is also possible that requests for memory in the merge function may take time due to the multiple processes requesting the memory at the same level, while in a normal merge sort only one merge is carried out at any point in time.  
 
 #### N = 10000
 ```
@@ -65,6 +65,7 @@ Here we can see that the multithreaded merge sort is not much better than the mu
 ```
 Normal merge sort took : 0.022478 seconds
 fork: Resource temporarily unavailable
+...
 Multiprocess merge sort took : 1.365130 seconds
 Segmentation fault (core dumped)
 
@@ -76,4 +77,4 @@ The threaded merge sort results in a segmentation fault, as there is not enough 
 Overall sticking to the normal merge sort is the best option due to its range and decent overall performance.  
 If we want a low variance in the time taken to sort any number(of the range 10<exp>5</exp>) of integers passed to our program, the multithreaded merge sort would be the optimum choice.  
 The multiprocess merge sort failed to outperform either of its counterparts at any stage in testing. This indicates that the time required to spawn a new process simply is not balanced by the gain in parallel computation, and using multiple processes to sort an array is a redundancy.  
-The multithreaded merge sort performed better than the multiprocess merge sort, but couldn't outperform the normal merge sort. The time taken to create the threads and to swap between them is not balanced out by the gain in parallel computing power. However a viable way to use threads would be to create a certain number of threads at inception (ideally equivalent to the number of CPU threads (virtual cores), 8 in my laptops case), and then merge the parts of the arrray sorted by those individual threads. This would ensure that the thread creation overhead would not be reflected in our run time, as we have a constant number of threads created, and the array would be sorted x times as fast where x is the number of threads. This would also ensure that our program would not need to swap between the threads (assuming your program has access to all the cores in your system). However most programs are allowed to use only one CPU thread (CPU6 in my laptops case), and this means that the creation of multiple processes and threads is completely redundant, as at any point in time only one user thread/process will be running. 
+The multithreaded merge sort performed better than the multiprocess merge sort, but couldn't outperform the normal merge sort. The time taken to create the threads and to swap between them is not balanced out by the gain in parallel computing power. However a viable way to use threads would be to create a certain number of threads at inception (ideally equivalent to the number of CPU threads (virtual cores), 8 in my laptops case), and then merge the parts of the arrray sorted by those individual threads. This would ensure that the thread creation overhead would not be reflected in our run time, as we have a constant number of threads created, and the array would be sorted x times as fast where x is the number of threads. This would also ensure that our program would not need to swap between the threads (assuming your program has access to all the cores in your system). 

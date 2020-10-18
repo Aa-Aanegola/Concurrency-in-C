@@ -334,7 +334,8 @@ If we can access the zone (ie it was free), update its company id, and set the f
 ```
 if(pharma_comp[id].batches == 0)
 {
-	while(pharma_comp[id].unconsumed && num_stud);
+	while(pharma_comp[id].unconsumed && num_stud)
+		sleep(1);
 
 	if(num_stud == 0)
 		return;
@@ -364,7 +365,7 @@ while(vacc_zone[id].has_vaccines == 0 && num_stud)
 if(num_stud == 0)
 	return NULL;
 while(pthread_mutex_trylock(&vacc_zone[id].lock))
-			sleep(1);
+	sleep(1);
 ```
 Wait for the zone to acquire vaccines, or for the number of students left to vaccinate become 0. If there are no students left, join the thread. If there are students left, wait till the lock to the zone is acquired ensuring that no company can send vaccines.  
 
@@ -424,7 +425,7 @@ while(student[id].status == WAITING)
 	sleep(1); 
 
 while(vacc_zone[student[id].vacc_zone_num].vaccinating == 0)
-			sleep(1);
+	sleep(1);
 
 while(pthread_mutex_trylock(&student[id].lock))
 	sleep(1);
@@ -560,3 +561,4 @@ Although locks are not necessarily required in most of the code, I chose to use 
 The busy waiting is to ensure smooth flow of the program, and could've been avoided with conditional lock and signal. However the busy wait is much more intuitive and readable.  
 The lock for the vaccination zone stud_left is not required because we are only decrementing/incrementing in any given phase of the program. However to highlight that it is a critical section in the program, locks were used to signify their criticality.  
 Zones try and allocate students until they get atleast one student. This was done in an attempt to make the vaccination efficient as otherwise the zones would keep waiting until some student failed their previous test. Although this does lead to more vaccination rounds, overall the vaccination should be faster.  
+The ```sleep(1)``` statements in all the busy wait while() loops do not affect performance, as they will reach their exit clause within one second. This effect is nominal on the program, as the program itself takes quite some time to run. It is also present to reduce the CPU consumption of the threads, as we check the condition only once every second instead of very frequently. 

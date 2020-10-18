@@ -149,14 +149,9 @@ This function is used to create all the performer threads, initialize all the se
 sem_init(&acoustic, 0, a);
 sem_init(&electric, 0, e);
 sem_init(&coordinators, 0, c);
+sem_init(&singer_join, 0, 0);
 ```
-Initializes all the semaphores to their correct values.  
-
-```
-for(int i = 0; i<k; i++)
-		sem_wait(&singer_join);
-```
-Here we 'invert' the singer_join semaphore by driving its value to 0.  
+Initializes all the semaphores to their correct values. Here we 'invert' the singer_join semaphore by initializing it with value 0.  
 
 ```
 for(int i = 0; i<k; i++)
@@ -205,7 +200,7 @@ if(perf->type != 'v')
 if(perf->type == 's')
 	pthread_join(singer_thread, NULL);
 ```
-Here we create separate threads to monitor the acoustic stage, the electric stage and if the performer is a singer then the other performers (the sing_join semaphore). We also wait for them to terminate, so we can carry on with the functionality of this thread.  
+Here we create separate threads to monitor the acoustic stage, the electric stage and if the performer is a singer the other performers (the sing_join semaphore). We also wait for them to terminate, so we can carry on with the functionality of this thread.  
 
 ```
 if(perf->status == WAITING)
@@ -217,13 +212,13 @@ if(perf->type == 's')
 After the threads created previously terminate (indicating that the performer has finished their task), we check if the performer was still waiting after the allowed time. If they were we return. If the performer is a singer, we return as singers do not receive T-shirts.  
 
 ```
-	sem_wait(&coordinators);	
+sem_wait(&coordinators);	
 
-	sleep(2);
+sleep(2);
 
-	sem_post(&coordinators);
+sem_post(&coordinators);
 
-	return NULL;
+return NULL;
 ```
 If the performer was not a singer, and they did not leave out of boredom, they wait for a coordinator to be assigned to them (wait for semaphore) and then after a small delay receive their T-shirt. After the performer receives their T-shirt, the coordinator is free to help other performers. The performer leaves (return).
 
