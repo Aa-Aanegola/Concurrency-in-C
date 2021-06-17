@@ -1,5 +1,5 @@
-# COVID simulator
-Welcome the the covid simulator. This program is intended to utilize multiple threads to simulate a scenario where there are several companies creating vaccines and distributing the vaccines to zones. These zones then use the vaccines on students returning to IIIT to ensure their safety on campus.
+# COVID Vaccination Simulator
+Welcome the the covid vaccination simulator. This program is intended to utilize multiple threads to simulate a scenario where there are several companies creating vaccines and distributing the vaccines to zones. These zones then use the vaccines on students returning to IIIT to ensure their safety on campus.
 ## To run
 ```
 gcc q2.c -lpthread
@@ -16,7 +16,7 @@ For example,
 1 1 1
 0.5
 ```
-Would mean that there is one company, one vaccination zone and one student. The vaccines produced by the company succeed 50% of the time.  
+Would mean that there is one company, one vaccination zone and one student. The vaccines produced by the company succeed 50% of the time (This is to say that if the vaccine fails, the student must be re-vaccinated). 
 ## Output format
 ```
 Pharmaceutical company 0 now exists!
