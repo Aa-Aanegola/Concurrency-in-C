@@ -1,11 +1,11 @@
 # Meltdown simulator
-Welcome to the Meltdown simulator. Meltdown is an annual event at IIIT hosted by the music club. Seeing as we missed performing at last years Meltdown, here is a simulation for all the performers of our college!
+Welcome to the Meltdown simulator. Meltdown is an annual event at IIIT hosted by the music club, and as we missed performing at last years Meltdown, here is a simulation for all the performers of our college!
 ## To run
 ```
 gcc q3.c -lpthread
 ./a.out
 ```
-These commands should be run in a UNIX based terminal from the directory in which ```q3.c``` is stored.  
+These commands should be run in a UNIX based terminal from the directory in which ```q3.c``` exists.  
 ## Input format
 ```
 <number of performers> <number of acoustic stages> <number of electric stages> <number of coordinators> <minimum performance time> <maximum performance time> <patience threshold>
@@ -47,7 +47,7 @@ This indicates that Arihant who is a bassist had been in the queue for longer th
 ```
 Aman is waiting for the coordinator to find their T-shirt size...
 ```
-This indicates that Aman has finished his performance, and is waiting for a coordinator to find his T-Shirt size (this takes 2 seconds).  
+This indicates that Aman has finished his performance, and is waiting for a coordinator to find his T-Shirt size (this takes 2 seconds, and yes people receive T-shirts for performing).  
 
 ```
 Abhijeet has received a T-Shirt!
